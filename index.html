@@ -1,25 +1,496 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오늘 입을 옷 추천</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘 입을 옷 추천</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #F8F6F0; /* Warm Off-White / Soft Beige Background */
+      color: #3F3A36; /* Deep Taupe / Brownish Charcoal Text */
+      -webkit-font-smoothing: antialiased;
+    }
+    .fade-in {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .pulse-spin {
+      animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    /* Custom Beige/Warm UI elements */
+    .bg-warm-card { background-color: #FFFFFF; }
+    .bg-warm-light { background-color: #F4F1EA; }
+    .bg-warm-accent { background-color: #5C554E; }
+    .bg-warm-accent:hover { background-color: #4A443E; }
+    .border-warm { border-color: #E8E3D8; }
+    .text-warm-main { color: #3F3A36; }
+    .text-warm-sub { color: #8C827A; }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <h1>👕 오늘 뭐 입지? 👗</h1>
-        <p class="subtitle">버튼을 눌러 오늘의 스타일을 추천받아보세요!</p>
+<body class="min-h-screen flex items-center justify-center p-4">
 
-        <button id="recommend-btn">오늘 입을 옷 추천</button>
+  <!-- 메인 모달/카드 컨테이너 -->
+  <div class="w-full bg-white rounded-3xl shadow-xl border border-warm/80 overflow-hidden flex flex-col min-h-[640px] relative max-w-md">
+    
+    <!-- HEADER -->
+    <header class="p-6 pb-3 text-center border-b border-warm/40 flex-shrink-0 bg-[#FDFBF7]">
+      <span class="text-[11px] font-semibold tracking-wider text-warm-sub uppercase">AI OUTFIT GUIDE</span>
+      <h1 id="main-title" class="text-2xl font-extrabold text-warm-main mt-1 cursor-pointer" onclick="resetApp()">
+        오늘 입을 옷 추천
+      </h1>
+    </header>
 
-        <div id="result-card" class="result-card hidden">
-            <img id="clothing-img" src="" alt="추천 옷 이미지">
-            <h2 id="clothing-name"></h2>
-            <p id="clothing-desc"></p>
+    <!-- CONTENT BODY -->
+    <main class="flex-1 p-6 flex flex-col justify-center relative bg-white">
+
+      <!-- STEP 0: LANDING -->
+      <div id="step-0" class="step-content text-center py-8 fade-in">
+        <div class="text-6xl mb-6">👔✨</div>
+        <h2 class="text-2xl font-bold text-warm-main mb-3">오늘 뭐 입지?</h2>
+        <p class="text-warm-sub text-xs leading-relaxed mb-8">
+          체형, 스케줄, 만날 사람, 날씨를 분석해<br>
+          상황에 가장 딱 맞는 최적의 코디를 조합해 드려요.
+        </p>
+        <button onclick="nextStep(1)" class="w-full bg-warm-accent text-white font-bold py-4 rounded-2xl shadow-sm transition active:scale-[0.98]">
+          시작하기 ➔
+        </button>
+      </div>
+
+      <!-- STEP 1: 체형 입력 -->
+      <div id="step-1" class="step-content hidden fade-in">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-extrabold text-warm-sub/70">STEP 01</span>
+          <span class="text-xs bg-warm-light text-warm-main px-2.5 py-1 rounded-full font-medium">체형 정보</span>
         </div>
-    </div>
+        <h3 class="text-xl font-bold text-warm-main mb-6">기본 체형을 입력해주세요</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-warm-sub mb-1">키 (cm)</label>
+            <input type="number" id="height" placeholder="예: 175" value="172" class="w-full px-4 py-3.5 bg-[#FDFBF7] border border-warm rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-warm-accent text-sm font-semibold text-warm-main">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-warm-sub mb-1">몸무게 (kg)</label>
+            <input type="number" id="weight" placeholder="예: 68" value="65" class="w-full px-4 py-3.5 bg-[#FDFBF7] border border-warm rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-warm-accent text-sm font-semibold text-warm-main">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-warm-sub mb-1">체형 타입</label>
+            <div class="grid grid-cols-2 gap-2 mt-1">
+              <button type="button" onclick="selectBody('slim')" class="body-btn p-3 text-xs font-semibold bg-[#FDFBF7] border border-warm rounded-xl text-warm-main hover:bg-warm-light">슬림함 🌿</button>
+              <button type="button" onclick="selectBody('normal')" class="body-btn active p-3 text-xs font-semibold bg-warm-accent text-white border border-warm-accent rounded-xl">보통/표준 ⚡</button>
+              <button type="button" onclick="selectBody('chubby')" class="body-btn p-3 text-xs font-semibold bg-[#FDFBF7] border border-warm rounded-xl text-warm-main hover:bg-warm-light">통통함/체격 🧸</button>
+              <button type="button" onclick="selectBody('muscular')" class="body-btn p-3 text-xs font-semibold bg-[#FDFBF7] border border-warm rounded-xl text-warm-main hover:bg-warm-light">근육질/단단 🏋️</button>
+            </div>
+          </div>
+        </div>
 
-    <script src="script.js"></script>
+        <div class="mt-8 flex justify-end">
+          <button onclick="nextStep(2)" class="px-6 py-2.5 bg-warm-accent text-white text-xs font-bold rounded-xl transition shadow-sm">
+            다음 ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: 스케줄 입력 -->
+      <div id="step-2" class="step-content hidden fade-in">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-extrabold text-warm-sub/70">STEP 02</span>
+          <span class="text-xs bg-warm-light text-warm-main px-2.5 py-1 rounded-full font-medium">오늘 스케줄</span>
+        </div>
+        <h3 class="text-xl font-bold text-warm-main mb-6">오늘 주요 일정이 어떻게 되나요?</h3>
+
+        <div class="grid grid-cols-1 gap-2.5">
+          <button onclick="selectOption('schedule', 'office', this)" class="opt-btn schedule-opt w-full p-4 text-left border rounded-2xl flex items-center justify-between bg-warm-accent text-white border-warm-accent">
+            <span class="font-bold text-sm">🏢 회사 / 학교 / 학원</span>
+            <span class="text-base">💼</span>
+          </button>
+          <button onclick="selectOption('schedule', 'hangout', this)" class="opt-btn schedule-opt w-full p-4 text-left border border-warm rounded-2xl flex items-center justify-between hover:bg-[#FDFBF7] text-warm-main">
+            <span class="font-bold text-sm">☕ 지인과의 약속 / 카페</span>
+            <span class="text-base">🍕</span>
+          </button>
+          <button onclick="selectOption('schedule', 'event', this)" class="opt-btn schedule-opt w-full p-4 text-left border border-warm rounded-2xl flex items-center justify-between hover:bg-[#FDFBF7] text-warm-main">
+            <span class="font-bold text-sm">🎉 결혼식 / 돌잔치 / 정식 행사</span>
+            <span class="text-base">🌹</span>
+          </button>
+          <button onclick="selectOption('schedule', 'date', this)" class="opt-btn schedule-opt w-full p-4 text-left border border-warm rounded-2xl flex items-center justify-between hover:bg-[#FDFBF7] text-warm-main">
+            <span class="font-bold text-sm">💖 데이트 / 특별한 날</span>
+            <span class="text-base">✨</span>
+          </button>
+        </div>
+
+        <div class="mt-8 flex justify-between items-center">
+          <button onclick="nextStep(1)" class="text-xs text-warm-sub font-bold hover:text-warm-main">이전</button>
+          <button onclick="nextStep(3)" class="px-6 py-2.5 bg-warm-accent text-white text-xs font-bold rounded-xl transition shadow-sm">
+            다음 ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: 만날 사람 입력 -->
+      <div id="step-3" class="step-content hidden fade-in">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-extrabold text-warm-sub/70">STEP 03</span>
+          <span class="text-xs bg-warm-light text-warm-main px-2.5 py-1 rounded-full font-medium">만날 대상</span>
+        </div>
+        <h3 class="text-xl font-bold text-warm-main mb-6">오늘 누구를 만나시나요?</h3>
+
+        <div class="grid grid-cols-1 gap-2.5">
+          <button onclick="selectOption('target', 'colleague', this)" class="opt-btn target-opt w-full p-4 text-left border rounded-2xl flex items-center justify-between bg-warm-accent text-white border-warm-accent">
+            <span class="font-bold text-sm">👔 직장 및 사회적 동료</span>
+            <span class="text-base">🤝</span>
+          </button>
+          <button onclick="selectOption('target', 'friend', this)" class="opt-btn target-opt w-full p-4 text-left border border-warm rounded-2xl flex items-center justify-between hover:bg-[#FDFBF7] text-warm-main">
+            <span class="font-bold text-sm">👭 친구 및 친한 지인</span>
+            <span class="text-base">🎈</span>
+          </button>
+          <button onclick="selectOption('target', 'lover', this)" class="opt-btn target-opt w-full p-4 text-left border border-warm rounded-2xl flex items-center justify-between hover:bg-[#FDFBF7] text-warm-main">
+            <span class="font-bold text-sm">👩‍❤️‍👨 연인 / 데이트 상대</span>
+            <span class="text-base">💌</span>
+          </button>
+          <button onclick="selectOption('target', 'family', this)" class="opt-btn target-opt w-full p-4 text-left border border-warm rounded-2xl flex items-center justify-between hover:bg-[#FDFBF7] text-warm-main">
+            <span class="font-bold text-sm">🏡 가족 및 친척</span>
+            <span class="text-base">🧡</span>
+          </button>
+        </div>
+
+        <div class="mt-8 flex justify-between items-center">
+          <button onclick="nextStep(2)" class="text-xs text-warm-sub font-bold hover:text-warm-main">이전</button>
+          <button onclick="nextStep(4)" class="px-6 py-2.5 bg-warm-accent text-white text-xs font-bold rounded-xl transition shadow-sm">
+            다음 ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 4: 계절 및 날씨 입력 -->
+      <div id="step-4" class="step-content hidden fade-in">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-extrabold text-warm-sub/70">STEP 04</span>
+          <span class="text-xs bg-warm-light text-warm-main px-2.5 py-1 rounded-full font-medium">날씨 환경</span>
+        </div>
+        <h3 class="text-xl font-bold text-warm-main mb-6">계절과 오늘 날씨는 어떤가요?</h3>
+
+        <div class="space-y-5">
+          <div>
+            <label class="block text-xs font-bold text-warm-sub mb-2">계절 선택</label>
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="selectSeason('spring', this)" class="season-btn py-3 text-xs font-bold border border-warm rounded-xl hover:bg-[#FDFBF7] bg-warm-accent text-white border-warm-accent">🌸 봄</button>
+              <button onclick="selectSeason('summer', this)" class="season-btn py-3 text-xs font-bold border border-warm rounded-xl hover:bg-[#FDFBF7] text-warm-main">🌿 여름</button>
+              <button onclick="selectSeason('autumn', this)" class="season-btn py-3 text-xs font-bold border border-warm rounded-xl hover:bg-[#FDFBF7] text-warm-main">🍁 가을</button>
+              <button onclick="selectSeason('winter', this)" class="season-btn py-3 text-xs font-bold border border-warm rounded-xl hover:bg-[#FDFBF7] text-warm-main">❄️ 겨울</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-warm-sub mb-2">오늘의 날씨</label>
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="selectWeather('clear', this)" class="weather-btn py-3 text-xs font-bold border border-warm rounded-xl hover:bg-[#FDFBF7] bg-warm-accent text-white border-warm-accent">☀️ 맑음</button>
+              <button onclick="selectWeather('cloudy', this)" class="weather-btn py-3 text-xs font-bold border border-warm rounded-xl hover:bg-[#FDFBF7] text-warm-main">☁️ 흐림</button>
+              <button onclick="selectWeather('rain', this)" class="weather-btn py-3 text-xs font-bold border border-warm rounded-xl hover:bg-[#FDFBF7] text-warm-main">🌧️ 비</button>
+              <button onclick="selectWeather('snow', this)" class="weather-btn py-3 text-xs font-bold border border-warm rounded-xl hover:bg-[#FDFBF7] text-warm-main">☃️ 눈</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 flex justify-between items-center">
+          <button onclick="nextStep(3)" class="text-xs text-warm-sub font-bold hover:text-warm-main">이전</button>
+          <button onclick="generateOutfit()" class="px-6 py-3 bg-warm-accent text-white text-xs font-extrabold rounded-xl transition shadow-sm">
+            오늘 입을 옷 찾기 ✨
+          </button>
+        </div>
+      </div>
+
+      <!-- LOADING STATE -->
+      <div id="loading-step" class="step-content hidden text-center py-12 fade-in">
+        <div class="w-12 h-12 border-4 border-warm border-t-warm-accent rounded-full pulse-spin mx-auto mb-6"></div>
+        <h3 class="text-lg font-bold text-warm-main">최적의 코디를 찾는 중...</h3>
+        <p class="text-xs text-warm-sub mt-2">상황과 날씨 데이터를 분석하고 있습니다</p>
+      </div>
+
+      <!-- STEP 5: RESULT PAGE (초심플 이모지 버전 + 베이지 & 웜톤 스타일) -->
+      <div id="step-result" class="step-content hidden fade-in">
+        
+        <!-- 성별 스위처 TAB -->
+        <div class="flex bg-warm-light p-1 rounded-2xl mb-4">
+          <button id="btn-male" onclick="switchGender('male')" class="flex-1 py-2 text-xs font-extrabold rounded-xl bg-white shadow-sm text-warm-main transition">
+            👨 남성 코디
+          </button>
+          <button id="btn-female" onclick="switchGender('female')" class="flex-1 py-2 text-xs font-extrabold rounded-xl text-warm-sub hover:text-warm-main transition">
+            👩 여성 코디
+          </button>
+        </div>
+
+        <!-- 룩 요약 한마디 -->
+        <div class="bg-warm-light border border-warm/80 text-warm-main p-3.5 rounded-2xl text-center mb-5">
+          <span class="text-[10px] text-warm-sub font-bold uppercase block mb-0.5 tracking-wider">TODAY'S LOOK</span>
+          <p id="look-summary-text" class="text-xs font-extrabold">
+            ✨ 단정함과 세련미를 더한 스페셜 코디
+          </p>
+        </div>
+
+        <!-- 결과 목록 (이모지 전면 강조 극심플 카드) -->
+        <div class="space-y-2 mb-6">
+          
+          <!-- 상의 -->
+          <div class="bg-[#FDFBF7] border border-warm/80 rounded-2xl p-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3.5">
+              <span id="res-top-emoji" class="text-3xl">🧥</span>
+              <div>
+                <span class="text-[10px] font-bold text-warm-sub uppercase block">TOP</span>
+                <span id="res-top-name" class="text-xs font-bold text-warm-main">트렌치 코트</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 하의 -->
+          <div class="bg-[#FDFBF7] border border-warm/80 rounded-2xl p-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3.5">
+              <span id="res-bottom-emoji" class="text-3xl">👖</span>
+              <div>
+                <span class="text-[10px] font-bold text-warm-sub uppercase block">BOTTOM</span>
+                <span id="res-bottom-name" class="text-xs font-bold text-warm-main">슬림 텍스처 슬랙스</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 신발 -->
+          <div class="bg-[#FDFBF7] border border-warm/80 rounded-2xl p-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3.5">
+              <span id="res-shoes-emoji" class="text-3xl">👞</span>
+              <div>
+                <span class="text-[10px] font-bold text-warm-sub uppercase block">SHOES</span>
+                <span id="res-shoes-name" class="text-xs font-bold text-warm-main">가죽 더비 슈즈</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 악세서리 / 소품 (2컬럼) -->
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div class="bg-[#FDFBF7] border border-warm/80 rounded-2xl p-2.5 flex items-center space-x-2.5">
+              <span id="res-acc1-emoji" class="text-2xl">💼</span>
+              <div class="truncate">
+                <span class="text-[9px] font-bold text-warm-sub block">ACC 1</span>
+                <span id="res-acc1-name" class="text-[11px] font-bold text-warm-main truncate block">브리프케이스</span>
+              </div>
+            </div>
+
+            <div class="bg-[#FDFBF7] border border-warm/80 rounded-2xl p-2.5 flex items-center space-x-2.5">
+              <span id="res-acc2-emoji" class="text-2xl">⌚</span>
+              <div class="truncate">
+                <span class="text-[9px] font-bold text-warm-sub block">ACC 2</span>
+                <span id="res-acc2-name" class="text-[11px] font-bold text-warm-main truncate block">메탈 시계</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RESTART BUTTON -->
+        <button onclick="resetApp()" class="w-full py-3.5 bg-warm-light hover:bg-warm-light/80 text-warm-main font-extrabold text-xs rounded-xl transition border border-warm/60">
+          🔄 다른 조건으로 다시 입기
+        </button>
+
+      </div>
+
+    </main>
+
+    <!-- FOOTER PROGRESS -->
+    <footer class="p-4 border-t border-warm/40 text-center flex-shrink-0 bg-[#FDFBF7]">
+      <div id="progress-bar" class="w-full bg-warm-light h-1.5 rounded-full overflow-hidden mb-2">
+        <div id="progress-fill" class="bg-warm-accent h-full w-0 transition-all duration-300"></div>
+      </div>
+      <span class="text-[10px] font-medium text-warm-sub">Minimalist AI Outfit Styling Helper</span>
+    </footer>
+
+  </div>
+
+  <script>
+    const state = {
+      gender: 'male',
+      height: 172,
+      weight: 65,
+      bodyType: 'normal',
+      schedule: 'office',
+      target: 'colleague',
+      season: 'spring',
+      weather: 'clear'
+    };
+
+    function selectBody(type) {
+      state.bodyType = type;
+      document.querySelectorAll('.body-btn').forEach(btn => {
+        btn.classList.remove('bg-warm-accent', 'text-white', 'border-warm-accent');
+        btn.classList.add('bg-[#FDFBF7]', 'text-warm-main', 'border-warm');
+      });
+      event.target.classList.remove('bg-[#FDFBF7]', 'text-warm-main', 'border-warm');
+      event.target.classList.add('bg-warm-accent', 'text-white', 'border-warm-accent');
+    }
+
+    function selectOption(category, value, el) {
+      state[category] = value;
+      const buttons = document.querySelectorAll(`.${category}-opt`);
+      buttons.forEach(btn => {
+        btn.classList.remove('bg-warm-accent', 'text-white', 'border-warm-accent');
+        btn.classList.add('border-warm', 'bg-white', 'text-warm-main');
+      });
+      el.classList.remove('border-warm', 'bg-white', 'text-warm-main');
+      el.classList.add('bg-warm-accent', 'text-white', 'border-warm-accent');
+    }
+
+    function selectSeason(season, el) {
+      state.season = season;
+      document.querySelectorAll('.season-btn').forEach(btn => {
+        btn.classList.remove('bg-warm-accent', 'text-white', 'border-warm-accent');
+        btn.classList.add('text-warm-main');
+      });
+      el.classList.add('bg-warm-accent', 'text-white', 'border-warm-accent');
+    }
+
+    function selectWeather(weather, el) {
+      state.weather = weather;
+      document.querySelectorAll('.weather-btn').forEach(btn => {
+        btn.classList.remove('bg-warm-accent', 'text-white', 'border-warm-accent');
+        btn.classList.add('text-warm-main');
+      });
+      el.classList.add('bg-warm-accent', 'text-white', 'border-warm-accent');
+    }
+
+    function nextStep(stepNumber) {
+      document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+
+      const progress = (stepNumber / 4) * 100;
+      document.getElementById('progress-fill').style.width = `${progress}%`;
+    }
+
+    function generateOutfit() {
+      document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('loading-step').classList.remove('hidden');
+
+      setTimeout(() => {
+        document.getElementById('loading-step').classList.add('hidden');
+        document.getElementById('step-result').classList.remove('hidden');
+        document.getElementById('progress-fill').style.width = '100%';
+        renderOutfit();
+      }, 1000);
+    }
+
+    function switchGender(gender) {
+      state.gender = gender;
+      const maleBtn = document.getElementById('btn-male');
+      const femaleBtn = document.getElementById('btn-female');
+
+      if (gender === 'male') {
+        maleBtn.className = "flex-1 py-2 text-xs font-extrabold rounded-xl bg-white shadow-sm text-warm-main transition";
+        femaleBtn.className = "flex-1 py-2 text-xs font-extrabold rounded-xl text-warm-sub hover:text-warm-main transition";
+      } else {
+        femaleBtn.className = "flex-1 py-2 text-xs font-extrabold rounded-xl bg-white shadow-sm text-warm-main transition";
+        maleBtn.className = "flex-1 py-2 text-xs font-extrabold rounded-xl text-warm-sub hover:text-warm-main transition";
+      }
+      renderOutfit();
+    }
+
+    function renderOutfit() {
+      const isMale = state.gender === 'male';
+      const { schedule, season, weather } = state;
+
+      let summary = "✨ 깔끔함과 편안함을 더한 모던 데일리 룩";
+      let top = { emoji: '👕', name: '옥스포드 셔츠' };
+      let bottom = { emoji: '👖', name: '슬림 테이퍼드 슬랙스' };
+      let shoes = { emoji: '👟', name: '화이트 스니커즈' };
+      let acc1 = { emoji: '🎒', name: '심플 백팩' };
+      let acc2 = { emoji: '⌚', name: '메탈 시계' };
+
+      if (season === 'winter') {
+        if (isMale) {
+          top = { emoji: '🧥', name: '울 롱코트 & 니트' };
+          bottom = { emoji: '👖', name: '기모 데님 팬츠' };
+          shoes = { emoji: '👞', name: '가죽 첼시 부츠' };
+          summary = "❄️ 한파에도 끄떡없는 단정한 웜 코디";
+        } else {
+          top = { emoji: '🧥', name: '캐시미어 코트 & 니트' };
+          bottom = { emoji: '👖', name: '와이드 울 슬랙스' };
+          shoes = { emoji: '👢', name: '앵클 힐 부츠' };
+          summary = "❄️ 포근함과 우아함을 더한 겨울 룩";
+        }
+        acc2 = { emoji: '🧣', name: '울 머플러' };
+      } else if (season === 'summer') {
+        if (isMale) {
+          top = { emoji: '👕', name: '린넨 셔츠' };
+          bottom = { emoji: '🩳', name: '린넨 숏 팬츠' };
+          shoes = { emoji: '👟', name: '어반 로퍼' };
+          summary = "🌿 시원하고 청량한 서머 캐주얼";
+        } else {
+          top = { emoji: '👗', name: '린넨 미디 원피스' };
+          bottom = { emoji: '🩳', name: '속바지 이너 팬츠' };
+          shoes = { emoji: '👡', name: '스트랩 샌들' };
+          summary = "🌿 가볍고 매력적인 린넨 원피스 룩";
+        }
+        acc2 = { emoji: '🕶️', name: '선글라스' };
+      } else {
+        if (schedule === 'event' || schedule === 'office') {
+          if (isMale) {
+            top = { emoji: '🧥', name: '블레이저 재킷 & 셔츠' };
+            bottom = { emoji: '👖', name: '드레스 슬랙스' };
+            shoes = { emoji: '👞', name: '가죽 더비 슈즈' };
+            summary = "💼 신뢰감을 주는 모던 포멀 룩";
+          } else {
+            top = { emoji: '🧥', name: '트위드 재킷 & 블라우스' };
+            bottom = { emoji: '👗', name: 'A라인 스커트/슬랙스' };
+            shoes = { emoji: '👠', name: '모던 펌프스 힐' };
+            summary = "🎉 격식있고 단정한 포멀 핏";
+          }
+        } else {
+          if (isMale) {
+            top = { emoji: '🧥', name: '체크 셔츠 & 맨투맨' };
+            bottom = { emoji: '👖', name: '스트레이트 데님' };
+            shoes = { emoji: '👟', name: '스포티 스니커즈' };
+            summary = "✨ 센스있는 데일리 모던 룩";
+          } else {
+            top = { emoji: '👚', name: '크롭 가디건 & 티' };
+            bottom = { emoji: '👖', name: '하이웨스트 데님' };
+            shoes = { emoji: '👟', name: '캔버스 스니커즈' };
+            summary = "💖 트렌디하고 감각적인 데이트 룩";
+          }
+        }
+      }
+
+      if (weather === 'rain' || weather === 'snow') {
+        acc1 = { emoji: '☂️', name: '3단 우산' };
+      }
+
+      document.getElementById('look-summary-text').innerText = summary;
+      
+      document.getElementById('res-top-emoji').innerText = top.emoji;
+      document.getElementById('res-top-name').innerText = top.name;
+      
+      document.getElementById('res-bottom-emoji').innerText = bottom.emoji;
+      document.getElementById('res-bottom-name').innerText = bottom.name;
+      
+      document.getElementById('res-shoes-emoji').innerText = shoes.emoji;
+      document.getElementById('res-shoes-name').innerText = shoes.name;
+
+      document.getElementById('res-acc1-emoji').innerText = acc1.emoji;
+      document.getElementById('res-acc1-name').innerText = acc1.name;
+
+      document.getElementById('res-acc2-emoji').innerText = acc2.emoji;
+      document.getElementById('res-acc2-name').innerText = acc2.name;
+    }
+
+    function resetApp() {
+      document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('step-0').classList.remove('hidden');
+      document.getElementById('progress-fill').style.width = '0%';
+    }
+  </script>
 </body>
 </html>
